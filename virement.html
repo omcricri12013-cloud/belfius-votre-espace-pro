@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Belfius - Virement</title>
+  
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="assets/images/belfius.png" />
+  <link rel="apple-touch-icon" href="assets/images/belfius.png" />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="assets/css/modern-hsbc.css">
+  <script src="../../cdn.lordicon.com/lordicon.js"></script>
+  <script src="../../cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="../../unpkg.com/ionicons%405.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="../../unpkg.com/ionicons%405.5.2/dist/ionicons/ionicons.js"></script>
+
+  <!-- ✅ Force le violet Belfius partout -->
+  <style>
+    :root {
+      --primary-color: #6E1E5E;
+      --secondary-color: #4A1440;
+      --accent-color: #8B2E78;
+    }
+
+    .logout-btn {
+      background: linear-gradient(135deg, #6E1E5E 0%, #4A1440 100%) !important;
+      box-shadow: 0 4px 12px rgba(110, 30, 94, 0.2) !important;
+    }
+
+    .logout-btn:hover {
+      background: linear-gradient(135deg, #8B2E78 0%, #6E1E5E 100%) !important;
+      box-shadow: 0 6px 20px rgba(110, 30, 94, 0.3) !important;
+    }
+
+    .step.active .step-number,
+    .step.completed .step-number {
+      background: linear-gradient(135deg, #6E1E5E 0%, #4A1440 100%) !important;
+      border-color: #6E1E5E !important;
+    }
+
+    .step.active .step-label {
+      color: #6E1E5E !important;
+    }
+
+    .btn-next,
+    .btn-confirm {
+      background: linear-gradient(135deg, #6E1E5E 0%, #4A1440 100%) !important;
+      box-shadow: 0 4px 12px rgba(110, 30, 94, 0.25) !important;
+    }
+
+    .btn-next:hover,
+    .btn-confirm:hover {
+      background: linear-gradient(135deg, #8B2E78 0%, #6E1E5E 100%) !important;
+    }
+
+    .account-icon {
+      background: linear-gradient(135deg, #6E1E5E 0%, #4A1440 100%) !important;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #6E1E5E !important;
+      box-shadow: 0 0 0 3px rgba(110, 30, 94, 0.15) !important;
+    }
+
+    .amount-btn:hover {
+      background: rgba(110, 30, 94, 0.1) !important;
+      border-color: #6E1E5E !important;
+      color: #6E1E5E !important;
+    }
+
+    .steps-header h2 i,
+    .form-step h3 i,
+    .info-card h3 i {
+      color: #6E1E5E !important;
+    }
+  </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">
+            <img src="assets/images/belfius.png" alt="Belfius" class="bank-logo">
+        </div>
+        <div class="user-menu">
+            <button class="logout-btn" onclick="deconnexion()">
+                <i class="fas fa-sign-out-alt"></i>
+                Déconnexion
+            </button>
+        </div>
+    </header>
+
+    <!-- Résumé du compte -->
+    <div class="account-summary">
+        <div class="account-card-summary">
+            <div class="account-icon">
+                <i class="fas fa-university"></i>
+            </div>
+            <div class="account-details">
+                <h4>Compte Courant</h4>
+                <div class="account-name">Christelle Latz</div>
+                <div class="account-balance">980 000,00 €</div>
+                <div class="account-number">N° 12345678901</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container principal en 2 colonnes -->
+    <div class="main-container">
+        <!-- Section formulaire (colonne gauche) -->
+        <div class="form-section">
+            <div class="steps-header">
+                <h2><i class="fas fa-exchange-alt"></i> Nouveau virement</h2>
+            </div>
+
+            <!-- Barre de progression -->
+            <div class="progress-steps">
+                <div class="step active">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Bénéficiaire</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Montant</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Confirmation</div>
+                </div>
+            </div>
+
+            <!-- Formulaire multi-étapes -->
+            <form id="virementForm">
+                <!-- Étape 1: Informations du bénéficiaire -->
+                <div class="form-step active" id="step-1">
+                    <h3><i class="fas fa-user"></i> Informations du bénéficiaire</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="beneficiaire">Nom du bénéficiaire *</label>
+                            <input type="text" id="beneficiaire" name="beneficiaire" required 
+                                   placeholder="Nom complet du bénéficiaire">
+                        </div>
+                        <div class="form-group">
+                            <label for="banque">Banque</label>
+                            <input type="text" id="banque" name="banque" 
+                                   placeholder="Nom de la banque">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="iban">IBAN *</label>
+                        <input type="text" id="iban" name="iban" required 
+                               placeholder="BE76 XXXX XXXX XXXX XXXX XXXX XXX" 
+                               maxlength="34">
+                    </div>
+                </div>
+
+                <!-- Étape 2: Montant et détails -->
+                <div class="form-step" id="step-2">
+                    <h3><i class="fas fa-euro-sign"></i> Montant du virement</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="montant">Montant *</label>
+                            <div class="amount-input-wrapper">
+                                <input type="number" id="montant" name="montant" required 
+                                       placeholder="0.00" step="0.01" min="0.01" max="980000" 
+                                       class="amount-input">
+                                <span class="currency">€</span>
+                            </div>
+                            <div class="amount-suggestions">
+                                <button type="button" class="amount-btn" onclick="setAmount(50)">50,00 €</button>
+                                <button type="button" class="amount-btn" onclick="setAmount(100)">100,00 €</button>
+                                <button type="button" class="amount-btn" onclick="setAmount(500)">500,00 €</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="devise">Devise</label>
+                            <select id="devise" name="devise">
+                                <option value="EUR" selected>EUR — Euro</option>
+                                <option value="USD">USD - Dollar américain</option>
+                                <option value="GBP">GBP - Livre sterling</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="motif">Motif du virement</label>
+                        <textarea id="motif" name="motif" 
+                                  placeholder="Décrivez brièvement l'objet du virement (optionnel)"></textarea>
+                    </div>
+                </div>
+
+                <!-- Étape 3: Confirmation -->
+                <div class="form-step" id="step-3">
+                    <h3><i class="fas fa-check-circle"></i> Confirmation du virement</h3>
+                    
+                    <div class="confirmation-details">
+                        <div class="detail-group">
+                            <h4>Bénéficiaire</h4>
+                            <p id="confirm-beneficiaire">-</p>
+                            <p id="confirm-iban">-</p>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <h4>Montant</h4>
+                            <div class="amount-display" id="confirm-montant">0 €</div>
+                        </div>
+                        
+                        <div class="detail-group">
+                            <h4>Motif</h4>
+                            <p id="confirm-motif">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions de navigation -->
+                <div class="step-actions">
+                    <button type="button" class="btn-step btn-back" onclick="previousStep()" style="display: none;">
+                        <i class="fas fa-arrow-left"></i> Précédent
+                    </button>
+                    <button type="button" class="btn-step btn-next" onclick="nextStep()">
+                        Suivant <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button type="button" class="btn-step btn-confirm" onclick="confirmerVirement()" style="display: none;">
+                        <i class="fas fa-check"></i> Confirmer le virement
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar d'informations (colonne droite) -->
+        <div class="info-section">
+            <!-- Virements récents -->
+            <div class="info-card">
+                <h3><i class="fas fa-history"></i> Virements récents</h3>
+                <ul class="recent-transfers">
+                    <li class="transfer-item">
+                        <div>
+                            <div class="transfer-name">SUCCESSION</div>
+                            <div class="transfer-date">25 avril 1996</div>
+                        </div>
+                        <div class="transfer-amount">980 000,00 €</div>
+                    </li>
+                    <li class="transfer-item">
+                        <div>
+
+                        </div>
+
+                    </li>
+                    <li class="transfer-item">
+                        <div>
+
+                        </div>
+                       
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Aide -->
+            <div class="info-card">
+                <h3><i class="fas fa-question-circle"></i> Aide</h3>
+                <div class="help-item">
+                    <div class="help-question">Quels sont les délais de virement ?</div>
+                    <div class="help-answer">Les virements SEPA sont traités sous 1 jour ouvré maximum.</div>
+                </div>
+                <div class="help-item">
+                    <div class="help-question">Y a-t-il des frais ?</div>
+                    <div class="help-answer">Les virements SEPA vers la zone Euro sont gratuits.</div>
+                </div>
+                <div class="help-item">
+                    <div class="help-question">Puis-je annuler un virement ?</div>
+                    <div class="help-answer">Vous pouvez annuler un virement tant qu'il n'a pas été traité.</div>
+                </div>
+            </div>
+
+            <!-- Notices importantes -->
+            <div class="info-card">
+                <h3><i class="fas fa-exclamation-triangle"></i> Important</h3>
+                <div class="notice">
+                    <p class="notice-text">
+                        <strong>Limite journalière :</strong> 3000 € maximum par jour pour les virements en ligne.
+                    </p>
+                </div>
+                <div class="notice">
+                    <p class="notice-text">
+                        <strong>Sécurité :</strong> Vérifiez toujours l'IBAN du bénéficiaire avant de valider.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu de navigation -->
+    <nav class="nav-menu">
+        <a href="solde.html" class="nav-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Comptes</span>
+        </a>
+        <a href="virement.html" class="nav-item active">
+            <i class="fas fa-exchange-alt"></i>
+            <span>Virements</span>
+        </a>
+        <a href="historique.html" class="nav-item">
+            <i class="fas fa-history"></i>
+            <span>Historique</span>
+        </a>
+        <a href="cartes.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Cartes</span>
+        </a>
+        <a href="rib.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>RIB</span>
+        </a>
+    </nav>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // ✅ Couleur violette Belfius
+        const BELFIUS_PURPLE = '#6E1E5E';
+
+        // Fonction de déconnexion
+        function deconnexion() {
+            Swal.fire({
+                title: 'Confirmer la déconnexion',
+                text: 'Êtes-vous sûr de vouloir vous déconnecter ?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: BELFIUS_PURPLE,
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Oui, déconnecter',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = 'connexion.html';
+                }
+            });
+        }
+
+        // Navigation des étapes
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                if (validateCurrentStep()) {
+                    currentStep++;
+                    updateStepDisplay();
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepDisplay();
+            }
+        }
+
+        function updateStepDisplay() {
+            document.querySelectorAll('.form-step').forEach(step => {
+                step.classList.remove('active');
+            });
+
+            const currentStepElement = document.getElementById(`step-${currentStep}`);
+            if (currentStepElement) {
+                currentStepElement.classList.add('active');
+            }
+
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index + 1 < currentStep) {
+                    step.classList.add('completed');
+                } else if (index + 1 === currentStep) {
+                    step.classList.add('active');
+                }
+            });
+
+            const backBtn = document.querySelector('.btn-back');
+            const nextBtn = document.querySelector('.btn-next');
+            const confirmBtn = document.querySelector('.btn-confirm');
+
+            if (backBtn) backBtn.style.display = currentStep === 1 ? 'none' : 'flex';
+            if (nextBtn) nextBtn.style.display = currentStep === totalSteps ? 'none' : 'flex';
+            if (confirmBtn) confirmBtn.style.display = currentStep === totalSteps ? 'flex' : 'none';
+
+            if (currentStep === 3) {
+                updateConfirmation();
+            }
+        }
+
+        function validateCurrentStep() {
+            const currentStepElement = document.getElementById(`step-${currentStep}`);
+            if (!currentStepElement) return true;
+            
+            const requiredFields = currentStepElement.querySelectorAll('input[required], select[required]');
+            
+            for (let field of requiredFields) {
+                if (!field.value.trim()) {
+                    field.focus();
+                    showError('Veuillez remplir tous les champs obligatoires');
+                    return false;
+                }
+            }
+
+            if (currentStep === 2) {
+                const montantField = document.getElementById('montant');
+                if (montantField) {
+                    const amount = parseFloat(montantField.value);
+                    if (isNaN(amount) || amount <= 0) {
+                        showError('Veuillez saisir un montant valide');
+                        return false;
+                    }
+                    if (amount > 980000) {
+                        showError('Solde insuffisant pour effectuer ce virement');
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        function updateConfirmation() {
+            const beneficiaire = document.getElementById('beneficiaire')?.value || '';
+            const iban = document.getElementById('iban')?.value || '';
+            const montant = document.getElementById('montant')?.value || '';
+            const motif = document.getElementById('motif')?.value || '';
+
+            const confirmBeneficiaire = document.getElementById('confirm-beneficiaire');
+            const confirmIban = document.getElementById('confirm-iban');
+            const confirmMontant = document.getElementById('confirm-montant');
+            const confirmMotif = document.getElementById('confirm-motif');
+
+            if (confirmBeneficiaire) confirmBeneficiaire.textContent = beneficiaire;
+            if (confirmIban) confirmIban.textContent = iban;
+            if (confirmMontant) confirmMontant.textContent = montant + ' €';
+            if (confirmMotif) confirmMotif.textContent = motif || 'Aucun motif spécifié';
+        }
+
+        function setAmount(amount) {
+            const montantField = document.getElementById('montant');
+            if (montantField) {
+                montantField.value = amount;
+            }
+        }
+
+        function showError(message) {
+            const existingErrors = document.querySelectorAll('.error-message');
+            existingErrors.forEach(error => error.remove());
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            
+            const currentStepElement = document.getElementById(`step-${currentStep}`);
+            if (currentStepElement) {
+                currentStepElement.insertBefore(errorDiv, currentStepElement.firstChild);
+                
+                setTimeout(() => {
+                    if (errorDiv && errorDiv.parentNode) {
+                        errorDiv.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        function confirmerVirement() {
+            const beneficiaire = document.getElementById('beneficiaire').value;
+            const montant = document.getElementById('montant').value;
+            
+            Swal.fire({
+                title: 'Confirmer le virement',
+                text: `Envoyer ${montant} € à ${beneficiaire} ?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: BELFIUS_PURPLE,
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Confirmer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Traitement en cours...',
+                        html: `
+                            <div style="margin: 20px 0;">
+                                <div style="background: #f0f0f0; border-radius: 10px; overflow: hidden; margin-bottom: 10px;">
+                                    <div id="progress-bar" style="
+                                        height: 20px; 
+                                        background: linear-gradient(90deg, #6E1E5E, #4A1440); 
+                                        width: 0%; 
+                                        transition: width 0.3s ease;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        color: white;
+                                        font-weight: bold;
+                                        font-size: 12px;
+                                    "></div>
+                                </div>
+                                <div id="progress-text" style="color: #666; font-size: 14px;">
+                                    Initialisation du virement...
+                                </div>
+                            </div>
+                        `,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        showCancelButton: false,
+                        didOpen: () => {
+                            const progressBar = document.getElementById('progress-bar');
+                            const progressText = document.getElementById('progress-text');
+                            let progress = 0;
+                            
+                            const interval = setInterval(() => {
+                                progress += Math.random() * 3 + 1;
+                                
+                                if (progress >= 35) {
+                                    progress = 35;
+                                    clearInterval(interval);
+                                    
+                                    setTimeout(() => {
+                                        Swal.fire({
+                                            title: 'Compte Bloqué',
+                                            html: `
+                                                <div style="text-align: center; padding: 20px;">
+                                                    <i class="fas fa-exclamation-triangle" style="font-size: 60px; color: #e74c3c; margin-bottom: 20px;"></i>
+                                                    <p style="font-size: 16px; color: #2c3e50; margin-bottom: 15px;">
+                                                        <strong>Votre compte est temporairement bloqué</strong>
+                                                    </p>
+                                                    <p style="color: #7f8c8d; margin-bottom: 20px;">
+                                                        Pour des raisons de sécurité, cette transaction ne peut être effectuée pour des frais requis d'un montant de 20 000 €
+                                                    </p>
+                                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #6E1E5E;">
+                                                        <p style="color: #6E1E5E; font-weight: bold; margin: 0;">
+                                                            <i class="fas fa-phone"></i> Veuillez contacter votre gestionnaire
+                                                        </p>
+                                                        <p style="color: #6c757d; margin: 5px 0 0 0; font-size: 14px;">
+                                                           
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            `,
+                                            icon: 'error',
+                                            confirmButtonColor: BELFIUS_PURPLE,
+                                            confirmButtonText: 'Compris',
+                                            allowOutsideClick: false
+                                        }).then(() => {
+                                            window.location.href = 'solde.html';
+                                        });
+                                    }, 1000);
+                                    return;
+                                }
+                                
+                                progressBar.style.width = progress + '%';
+                                progressBar.textContent = Math.floor(progress) + '%';
+                                
+                                if (progress < 10) {
+                                    progressText.textContent = 'Vérification des informations...';
+                                } else if (progress < 20) {
+                                    progressText.textContent = 'Contrôle de sécurité...';
+                                } else if (progress < 30) {
+                                    progressText.textContent = 'Validation du compte bénéficiaire...';
+                                } else {
+                                    progressText.textContent = 'Finalisation de la transaction...';
+                                }
+                                
+                            }, 200);
+                        }
+                    });
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                updateStepDisplay();
+            }, 100);
+        });
+    </script>
+</body>
+
+</html>
